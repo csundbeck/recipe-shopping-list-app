@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, Output } from '@angular/core';
-import { EventEmitter } from 'stream';
+import { EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'app-alert',
@@ -9,14 +9,14 @@ import { EventEmitter } from 'stream';
 export class AlertComponent implements OnInit {
 
   @Input() message: string;
-  @Output() close: new EventEmitter<void>();
+  @Output() close = new EventEmitter<void>();
 
   constructor() { }
 
   ngOnInit(): void {
   }
 
-  onCLose() {
+  onClose() {
     this.close.emit()
   }
 
