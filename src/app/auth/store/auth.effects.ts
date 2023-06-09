@@ -1,36 +1,85 @@
-import { Actions, ofType, Effect } from "@ngrx/effects";
-import * as AuthActions from './auth.actions'
-import { catchError, map, switchMap } from "rxjs/operators";
-import { HttpClient } from "@angular/common/http";
-import { AuthResponseData } from "../auth.service";
-import { environment } from "src/environments/environment";
-import { of } from "rxjs";
-import { Injectable } from "@angular/core";
+import { Actions, ofType, Effect } from '@ngrx/effects';
+import * as AuthActions from './auth.actions';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { AuthResponseData } from '../auth.service';
+import { environment } from 'src/environments/environment';
+import { of } from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
+import { handleAuthentication, handleError } from '../auth.service';
 
 @Injectable()
 export class AuthEffects {
-    @Effect()
-    authLogin = this.actions$.pipe(
-        ofType(AuthActions.LOGIN_START),
-        switchMap((authData: AuthActions.LoginStart) => {
-            return this.http
-            .post<AuthResponseData>(
-                'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=' + environment.firebaseAPIKey,
-                {
-                email: authData.payload.email,
-                password: authData.payload.password,
-                returnSecureToken: true
-                }
-            ).pipe(
-                map(res => {
-                const expirationDate = new Date(new Date().getTime() + +res.expiresIn * 1000);
-                return of(new AuthActions.Login({email: res.email, userId: res.localId, token: res.idToken, expirationDate: expirationDate}));
-            }), catchError(error => {
-                console.error(error);
-                return of();
-            }))
-        }),
-    );
+  @Effect()
+  authSignup = this.actions$
+    .pipe(ofType(AuthActions.SIGNUP_START))
+    .switchMap((signupAction: AuthActions.SignUpStart) => {
+      return this.http
+        .post<AuthResponseData>(
+          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=' +
+            environment.firebaseAPIKey,
+          {
+            email: signupAction.payload.email,
+            password: signupAction.payload.password,
+            returnSecureToken: true,
+          }
+        )
+        .pipe(
+          map((res) => {
+            return handleAuthentication(
+              +res.expiresIn,
+              res.email,
+              res.localId,
+              res.idToken
+            );
+          }),
+          catchError((errorRes) => {
+            return handleError(errorRes);
+          })
+        );
+    });
+  @Effect()
+  authLogin = this.actions$.pipe(
+    ofType(AuthActions.LOGIN_START),
+    switchMap((authData: AuthActions.LoginStart) => {
+      return this.http
+        .post<AuthResponseData>(
+          'https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=' +
+            environment.firebaseAPIKey,
+          {
+            email: authData.payload.email,
+            password: authData.payload.password,
+            returnSecureToken: true,
+          }
+        )
+        .pipe(
+          map((res) => {
+            return handleAuthentication(
+              +res.expiresIn,
+              res.email,
+              res.localId,
+              res.idToken
+            );
+          }),
+          catchError((errorRes) => {
+            return handleError(errorRes);
+          })
+        );
+    })
+  );
 
-    constructor(private actions$: Actions, private http: HttpClient) {}
+  @Effect()
+  authSuccess = this.actions$.pipe(
+    ofType(AuthActions.AUTHENTICATE_SUCCESS),
+    tap(() => {
+      this.router.navigate(['/']);
+    })
+  );
+
+  constructor(
+    private actions$: Actions,
+    private http: HttpClient,
+    private router: Router
+  ) {}
 }
