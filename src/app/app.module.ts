@@ -14,12 +14,11 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import * as fromApp from './store/app.reducer';
 import { EffectsModule } from '@ngrx/effects';
 import { AuthEffects } from './auth/store/auth.effects';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { environment } from '../environments/environment';
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    HeaderComponent,
-  ],
+  declarations: [AppComponent, HeaderComponent],
   imports: [
     BrowserAnimationsModule,
     BrowserModule,
@@ -31,9 +30,9 @@ import { AuthEffects } from './auth/store/auth.effects';
     CoreModule,
     AuthModule,
     StoreModule.forRoot(fromApp.appReducer),
-    EffectsModule.forRoot([AuthEffects])
+    EffectsModule.forRoot([AuthEffects]),
+    StoreDevtoolsModule.instrument({ logOnly: environment.production }),
   ],
   bootstrap: [AppComponent],
-  
 })
 export class AppModule {}

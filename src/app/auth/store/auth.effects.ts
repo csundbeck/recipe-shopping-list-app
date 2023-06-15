@@ -2,7 +2,7 @@ import { Actions, ofType, Effect } from '@ngrx/effects';
 import * as AuthActions from './auth.actions';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
-import { AuthResponseData } from '../auth.service';
+import { AuthResponseData, AuthService } from '../auth.service';
 import { environment } from 'src/environments/environment';
 import { of } from 'rxjs';
 import { Injectable } from '@angular/core';
@@ -26,6 +26,9 @@ export class AuthEffects {
           }
         )
         .pipe(
+          tap((resData) => {
+            this.authService.autoLogout(+resData.expiresIn * 1000);
+          }),
           map((res) => {
             return handleAuthentication(
               +res.expiresIn,
@@ -54,6 +57,9 @@ export class AuthEffects {
           }
         )
         .pipe(
+          tap((resData) => {
+            this.authService.autoLogout(+resData.expiresIn * 1000);
+          }),
           map((res) => {
             return handleAuthentication(
               +res.expiresIn,
@@ -71,7 +77,7 @@ export class AuthEffects {
 
   @Effect()
   authSuccess = this.actions$.pipe(
-    ofType(AuthActions.AUTHENTICATE_SUCCESS),
+    ofType(AuthActions.AUTHENTICATE_SUCCESS, AuthActions.LOGOUT),
     tap(() => {
       this.router.navigate(['/']);
     })
@@ -80,6 +86,7 @@ export class AuthEffects {
   constructor(
     private actions$: Actions,
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {}
 }
